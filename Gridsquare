@@ -1,0 +1,41 @@
+class Gridsquare {
+  int x;
+  int y;
+  int size;
+  color colour;
+  boolean black;
+  boolean still;
+
+  //------------------------------------------------------------------------------------------------------------------------------------------
+
+  Gridsquare(int x, int y, int size) {
+    this.x = x;
+    this.y = y;
+    this.size = size;
+
+    colour = color(0, 0, 0); //sets an initial colour of black
+    black = true;
+    still = true;
+  }
+
+  //------------------------------------------------------------------------------------------------------------------------------------------
+
+  void show() {
+    fill(colour);
+    if (colour != color(0, 0, 0)) {
+      black = false;
+    } else {
+      black = true;
+    }
+    int i = testing? 255: 0;
+    stroke(i);
+    strokeWeight(1);
+    rect(x, y, size, size);
+    if(testing){
+    fill(255);
+    textSize(8);
+    textAlign(CENTER, CENTER);
+    text((x/tilesize + ", " + y/tilesize), x + tilesize/2, y + tilesize/2);
+    }
+  }
+}
