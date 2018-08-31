@@ -1,0 +1,287 @@
+//Variables you can edit
+
+int tilesize = 31;
+float updateRate = 100; //this corresponds to the initial speed 
+float speedIncrease = 0.00001; //vary this by adding or taking away 9s.
+String gameOverMessage = "Game over!";
+int gameOverFlashRate = 40;
+int textSize = 32;
+boolean testing = true; //enable this if you're testing
+
+
+//Variables you probably shouldn't edit
+
+int rows = 24;
+int heightLimit = 4;
+int cols = 10;
+float arrowDelayVar = 1; //You can theoretically range this from 1-10, but at the moment, 1 works fine.
+float rotationDelayVar = 1; //You could theoretically range this from 1-10, but at the moment, 1 works fine.
+
+
+//Variables you shouldn't edit
+
+Screen screen;
+int frame; //frame is just a variable that counts which frame we're on. If we're on a frame larger than updateRate, the block moves down automatically
+boolean oddCols;
+boolean dead;
+PShape enter;
+PShape mouseLeft;
+PShape mouseRight;
+String keyboardRow1 = "QWERTYUIOP[]";
+String keyboardRow2 = "ASDFGHJKL;'#";
+String keyboardRow3 = "ZXCVBNM,./";
+boolean a = false;
+boolean s = false;
+boolean d = false;
+boolean down = false;
+boolean left = false;
+boolean right = false;
+boolean space = false;
+boolean enterPressed = false;
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+void setup() {
+  frameRate(150);
+  size(952, 952);
+  screen = new Screen(tilesize);
+  arrowDelayVar *= 10;
+  rotationDelayVar *= 25;
+  if (cols % 2 == 1) {
+    oddCols = true;
+  } else {
+    oddCols = false;
+  }
+  dead = false;
+  frame = int(updateRate);
+  screen.create();
+  screen.show();
+  enter = createShape();
+  enter.beginShape();
+  enter.vertex(831, 611);
+  enter.vertex(872, 611);
+  enter.vertex(872, 676);
+  enter.vertex(842, 676);
+  enter.vertex(842, 641);
+  enter.vertex(831, 641);
+  enter.endShape(CLOSE);
+  enter.setStrokeWeight(1);
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+void draw() {
+  background(127); //this is super irrelevant for most of the code, except where I want to make the death message flash so we need something that clears it
+  if (!dead) {
+    if (frame >= updateRate) {
+      screen.frameUpdate(); //moves a block down at the regular time interval
+      frame = 0;
+      updateRate -= speedIncrease;
+      //println(updateRate);
+    } else { //just ensures gravity doesn't get in the way
+      screen.mouseUpdate(); //rotates a block in accordance to pressing the mouse
+    }    
+
+    screen.arrowUpdate(); //moves a block in accordance to a pressing of the arrow key - this is outside the else to prevent stop starts - less important for rotation since the rotation delay is longer
+
+    screen.show(); //draws the screen
+    drawDeathline(); //draws the line of death
+    frame++;
+
+    if (testing) {
+      fill(255);
+      textSize(12);
+      for (int i = 0; i < cols; i++) { //for testing purposes
+        text(i, i*tilesize + tilesize/2, (rows + 1) * tilesize);
+      }
+      for (int i = 0; i < rows; i++) { //for testing purposes
+        text(i, (cols + 1)*tilesize, i * tilesize + tilesize/2);
+      }
+
+      drawMouseKeyboard();
+      textSize(20);
+      fill(255, 255, 0);
+      text(("Speed: " + int(100 - updateRate) + "%"), (cols + 4)*tilesize, 1.5 * tilesize);
+    }
+  } else {
+    screen.show(); //draws the screen    
+    drawDeathline(); //draws the line of death
+    frameRate(60);
+    textSize(textSize);
+    textAlign(CENTER, CENTER);    
+    fill(255, 255, 0);
+    if (frame <= 3*gameOverFlashRate/4) {
+      text(gameOverMessage, 0.5*tilesize, 0.5*tilesize, (cols - 0.5)*tilesize, (heightLimit - 0.5)*tilesize);
+    }
+    frame++;
+    if (frame > gameOverFlashRate) { //we could do this otherwise with modulo arithmetic, but as frame gets larger it gets harder to store in memory so this is a better idea
+      frame = 0;
+    }
+  }
+}
+
+void drawMouseKeyboard() {
+  noStroke();
+  fill(0);
+  for (int i = 0; i < 12; i++) {
+    textAlign(CENTER, CENTER);
+    fill(0);
+    stroke(255);
+    strokeWeight(1);
+    rect(411 + i*35, 611, 30, 30);
+    fill(255);    
+    text(str(keyboardRow1.charAt(i)), 411 + i*35, 611, 30, 30);
+    fill(0);
+    if (i == 0 || i == 1 || i == 2) {
+      continue;
+    }
+    rect(422 + i*35, 646, 30, 30);
+    fill(255);
+    text(str(keyboardRow2.charAt(i)), 422 + i*35, 646, 30, 30);
+    if (i > 9) {
+      continue;
+    }
+    fill(0);
+    rect(433 + i*35, 681, 30, 30);
+    fill(255);
+    text(str(keyboardRow3.charAt(i)), 433 + i*35, 681, 30, 30);
+  }
+  fill(0);
+  for (int i = 0; i < 3; i++) {
+    fill(0);
+    rect(433 + 35*i, 681, 30, 30); //z, x, and c, which are out of the for loop due to the way the continues function
+    fill(255);
+    text(str(keyboardRow3.charAt(i)), 433 + i*35, 681, 30, 30);
+  }
+  fill(0);
+  rect(783, 681, 54, 30); //shift
+  rect(842, 681, 30, 30);  //up
+  fill(255);
+  text("SHIFT", 783, 681, 54, 30);
+  text("UP", 842, 681, 30, 30);
+
+  int fill = 0;
+
+  fill = down ? 255: 0;
+  fill(fill);
+  stroke(255-fill);
+  rect(842, 716, 30, 30); //down
+  fill(255 - fill);
+  textSize(8.5);
+  text("DOWN", 842, 716, 30, 30); 
+
+  fill = left ? 255: 0;  
+  fill(fill);    
+  stroke(255-fill);
+  rect(433 + 315 + 59, 716, 30, 30); //left
+  fill(255 - fill); 
+  textSize(11);
+  text("LEFT", 433 + 315 + 59, 716, 30, 30);
+
+  fill = right ? 255: 0;
+  fill(fill);  
+  stroke(255-fill);  
+  rect(433 + 385 + 59, 716, 30, 30); //right
+  fill(255 - fill);   
+  textSize(8.5);
+  text("RIGHT", 433 + 385 + 59, 716, 30, 30);
+
+  fill = space ? 255: 0;
+  fill(fill);  
+  stroke(255-fill);  
+  rect(433 + 2*35, 716, 170, 30); //space
+  fill(255 - fill);   
+  textSize(8.5);
+  text("SPACE", 433 + 2*35, 716, 170, 30);
+
+  fill = enterPressed ? 255: 0;
+  enter.setFill(fill);
+  enter.setStroke(255 - fill);
+  shape(enter);
+  fill(255-fill);
+  textSize(11);
+  text("ENTER", 831, 611, 41, 30); 
+
+  fill = a ? 255: 0;
+  fill(fill);
+  stroke(255-fill);
+  rect(422, 646, 30, 30);
+  fill(255-fill);
+  text(str(keyboardRow2.charAt(0)), 422, 646, 30, 30);
+
+  fill = s ? 255: 0; //if(s){ fill = 255; } else { fill = 0;}
+  fill(fill);
+  stroke(255-fill);
+  rect(457, 646, 30, 30);
+  fill(255-fill);
+  text(str(keyboardRow2.charAt(1)), 457, 646, 30, 30);
+
+  fill = d ? 255: 0;
+  fill(fill);
+  stroke(255-fill);
+  rect(492, 646, 30, 30);
+  fill(255-fill);
+  text(str(keyboardRow2.charAt(2)), 492, 646, 30, 30);
+}
+
+void drawDeathline() {
+
+  stroke(255);
+  strokeWeight(5);
+  if (oddCols) {
+    for (int i = 0; i < cols; i+=2) {
+      line((i*tilesize), (heightLimit*tilesize), ((i + 1)*tilesize), (heightLimit*tilesize));
+    }
+  } else {
+    for (int i = 0; i < cols; i+=2) {
+      line(((i + 0.5)*tilesize), (heightLimit*tilesize), ((i + 1.5)*tilesize), (heightLimit*tilesize));
+    }
+  }
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+
+void keyPressed() {
+  if (keyCode == DOWN) {
+    down = true;
+  } else if (keyCode == LEFT) {
+    left = true;
+  } else if (keyCode == RIGHT) {
+    right = true;
+  } else if (keyCode == ENTER) {
+    enterPressed = true;
+  } else if (key == ' ') {
+    space = true;
+  } else if (key == 'a') {
+    a = true;
+  } else if (key == 's') {
+    s = true;
+  } else if (key == 'd') {
+    d = true;
+  }
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+void keyReleased() {
+  if (keyCode == DOWN) {
+    down = false;
+  } else if (keyCode == LEFT) {
+    left = false;
+  } else if (keyCode == RIGHT) {
+    right = false;
+  } else if (keyCode == ENTER) {
+    enterPressed = false;
+  } else if (key == ' ') {
+    space = false;
+  } else if (key == 'a') {
+    a = false;
+  } else if (key == 's') {
+    s = false;
+  } else if (key == 'd') {
+    d = false;
+  }
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------
