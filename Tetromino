@@ -1,0 +1,72 @@
+class Tetromino {
+  int shape = int(random(7));
+  int rightestColumn = 0;
+  int leftestColumn = 0;
+  int bottomestRow = 0;
+  int topestRow = 0;
+  int colsCalculation = cols;
+  PVector rotationCentre;
+  PVector[] squares = new PVector[4];
+  char lineState;
+
+  //------------------------------------------------------------------------------------------------------------------------------------------
+
+  void makeNewShape() { //creating the variables, they're stored in an array of 4 locations, basically
+    if (!oddCols) {
+      colsCalculation--;
+    }
+    topestRow = 0;
+    switch(shape) { 
+    case 0: //I
+      bottomestRow = 0;
+      leftestColumn = colsCalculation/2 - 1;
+      rightestColumn = colsCalculation/2 + 2;
+      squares = new PVector[] {new PVector(colsCalculation/2 - 1, 0), new PVector(colsCalculation/2, 0), new PVector(colsCalculation/2 + 1, 0), new PVector(colsCalculation/2 + 2, 0)};
+      rotationCentre = new PVector(0, 0); //irrelevant, rotates by a special line function
+      lineState = 'd'; //down orientation. The others are, unsurprisingly, u, l, and r.
+      break;
+    case 1: //O
+      bottomestRow = 1;
+      leftestColumn = colsCalculation/2;
+      rightestColumn = colsCalculation/2 + 1;
+      squares = new PVector[] {new PVector(colsCalculation/2, 0), new PVector(colsCalculation/2 + 1, 0), new PVector(colsCalculation/2, 1), new PVector(colsCalculation/2 + 1, 1)};      
+      rotationCentre = new PVector(0, 0); //irrelevant, cannot rotate
+      break;
+    case 2: //L
+      bottomestRow = 2;
+      leftestColumn = colsCalculation/2;
+      rightestColumn = colsCalculation/2 + 1;
+      squares = new PVector[] {new PVector(colsCalculation/2, 0), new PVector(colsCalculation/2, 1), new PVector(colsCalculation/2, 2), new PVector(colsCalculation/2 + 1, 2)};
+      rotationCentre = new PVector(colsCalculation/2, 1);
+      break;
+    case 3: //J
+      bottomestRow = 2;        
+      leftestColumn = colsCalculation/2;
+      rightestColumn = colsCalculation/2 + 1;
+      squares = new PVector[] {new PVector(colsCalculation/2 + 1, 0), new PVector(colsCalculation/2 + 1, 1), new PVector(colsCalculation/2, 2), new PVector(colsCalculation/2 + 1, 2)};
+      rotationCentre = new PVector(colsCalculation/2 + 1, 1);
+      break;
+    case 4: //T
+      bottomestRow = 1;
+      leftestColumn = colsCalculation/2 - 1;
+      rightestColumn = colsCalculation/2 + 1;
+      squares = new PVector[] {new PVector(colsCalculation/2 - 1, 0), new PVector(colsCalculation/2, 0), new PVector(colsCalculation/2 + 1, 0), new PVector(colsCalculation/2, 1)};
+      rotationCentre = new PVector(colsCalculation/2, 0);
+      break;
+    case 5: //S
+      bottomestRow = 1;
+      leftestColumn = colsCalculation/2 - 1;
+      rightestColumn = colsCalculation/2 + 1;
+      squares = new PVector[] {new PVector(colsCalculation/2, 0), new PVector(colsCalculation/2 + 1, 0), new PVector(colsCalculation/2 - 1, 1), new PVector(colsCalculation/2, 1)};
+      rotationCentre = new PVector(colsCalculation/2, 1);
+      break;
+    case 6: //Z
+      bottomestRow = 1;
+      leftestColumn = colsCalculation/2 - 1;
+      rightestColumn = colsCalculation/2 + 1;
+      squares = new PVector[] {new PVector(colsCalculation/2 - 1, 0), new PVector(colsCalculation/2, 0), new PVector(colsCalculation/2, 1), new PVector(colsCalculation/2 + 1, 1)};
+      rotationCentre = new PVector(colsCalculation/2, 1);
+      break;
+    }
+  }
+} 
