@@ -1,0 +1,675 @@
+class Screen {
+  int tilesize;  
+  color red; 
+  color green;
+  color blue;
+  color lilac;
+  color pink;
+  color orange;
+  color aqua;
+  color black;
+  Gridsquare[][] board;
+  Tetromino tetromino;
+  boolean allStill;
+  int arrowDelay;
+  int rotationDelay;
+  color currentColour;
+
+  //------------------------------------------------------------------------------------------------------------------------------------------
+
+  Screen(int tilesize) {
+    this.tilesize = tilesize;
+    board = new Gridsquare[cols][rows];
+    red = color(255, 0, 0);
+    green = color(0, 255, 0);
+    blue = color(0, 0, 255);
+    lilac = color(128, 128, 255);
+    pink = color(255, 128, 128);
+    orange = color(255, 128, 0);
+    aqua = color(0, 198, 255);
+    black = color(0);
+    allStill = false;
+    arrowDelay = 0;
+    rotationDelay = 0;
+    currentColour = black;
+  }
+
+  //------------------------------------------------------------------------------------------------------------------------------------------
+
+  void create() {
+    for (int i = 0; i < cols; i++) {
+      for (int j = 0; j < rows; j++) {
+        board[i][j] = new Gridsquare(i*tilesize, j*tilesize, tilesize);
+      }
+    }
+    makeNewShape();
+  }
+
+
+  //------------------------------------------------------------------------------------------------------------------------------------------
+
+  void show() {
+    for (int i = 0; i < cols; i++) {
+      for (int j = 0; j < rows; j++) {
+        board[i][j].show();
+      }
+    }
+  }
+
+  //------------------------------------------------------------------------------------------------------------------------------------------
+
+  void arrowUpdate() {
+    if (!allStill) {
+      if (arrowDelay == 0) {
+        if (keyPressed) {
+          if (keyCode == RIGHT) {
+            if (tetromino.rightestColumn != cols - 1) {
+              moveRight();
+            }
+          } else if (keyCode == LEFT) {
+            if (tetromino.leftestColumn != 0) {
+              moveLeft();
+            }
+          } else if (keyCode == DOWN) {
+            if (tetromino.bottomestRow != rows - 1) {
+              moveDown();
+            }
+          } else if (key == ' ' || enterPressed) { //I tried to use keyCode == ENTER and processing didn't like it for literally no reason so this is what I do now
+            if (tetromino.bottomestRow != rows - 1) {
+              for (int i = 0; i < rows; i++) {
+                if (tetromino.bottomestRow == rows - 1) {
+                  continue;
+                }
+                moveDown(); //this just executes the move down function a bunch of times, until either the function won't move it down (since it's atop another piece), or it hits the bottom and skips wby the continue
+              }
+              allStill = true;
+            }
+          } else if (key == 'a') {
+            if (tetromino.leftestColumn != 0) {
+              moveLeft();
+            }
+          } else if (key == 'd') {
+            if (tetromino.rightestColumn != cols - 1) {
+              moveRight();
+            }
+          } else if (key == 's') { 
+            if (tetromino.bottomestRow != rows - 1) {
+              moveDown();
+            }
+          }
+          arrowDelay = int(arrowDelayVar);
+        }
+      } else { 
+        arrowDelay--;
+      }
+    }
+  }
+
+  //------------------------------------------------------------------------------------------------------------------------------------------
+
+  void moveRight() {
+    boolean free2MoveRight = true;
+    int squaresMoved = 0;
+
+    for (int i = 0; i < 4; i++) {
+      if ((!squareIsBlack(tetromino.squares[i].x + 1, tetromino.squares[i].y)) && squareIsNotInShape(tetromino.squares[i].x + 1, tetromino.squares[i].y)) {
+        free2MoveRight = false;
+      }
+    }
+
+    if (free2MoveRight) {
+      while (squaresMoved < 4) { //while we haven't moved all four squares
+        for (int i = cols - 2; i >= 0; i--) { //for every column, right to left (except the rightmost column)
+          for (int j = rows - 1; j >= 0; j--) { //for every square in that column, bottom to top (although the order here is unimportant)
+            for (int k = 0; k < 4; k++) { //for each square in the array
+              if (int(tetromino.squares[k].x) == i && int(tetromino.squares[k].y) == j) { //if the square we're looking at matches one in the array
+                board[i + 1][j].colour = board[i][j].colour; //move it right, update its location in squares, etc.
+                board[i][j].colour = black;
+                tetromino.squares[k].x++;
+                squaresMoved++;
+              }
+            }
+          }
+        }
+      }
+      tetromino.rightestColumn++;
+      tetromino.leftestColumn++;
+      tetromino.rotationCentre.x++;
+    }
+  }
+
+  //------------------------------------------------------------------------------------------------------------------------------------------
+
+  void moveLeft() {
+    boolean free2MoveLeft = true;
+    int squaresMoved = 0;
+
+    for (int i = 0; i < 4; i++) {
+      if ((!squareIsBlack(tetromino.squares[i].x - 1, tetromino.squares[i].y)) && squareIsNotInShape(tetromino.squares[i].x - 1, tetromino.squares[i].y)) {
+        free2MoveLeft = false;
+      }
+    }
+
+    if (free2MoveLeft) {
+      while (squaresMoved < 4) { //while we haven't moved all four squares
+        for (int i = 1; i < cols; i++) { //for every column, left to right (except the leftmost column)
+          for (int j = rows - 1; j >= 0; j--) { //for every square in that column, bottom to top (although the order here is unimportant)
+            for (int k = 0; k < 4; k++) { //for each square in the array
+              if (int(tetromino.squares[k].x) == i && int(tetromino.squares[k].y) == j) { //if the square we're looking at matches one in the array
+                board[i - 1][j].colour = board[i][j].colour; //move it right, update its location in squares, etc.
+                board[i][j].colour = black;
+                tetromino.squares[k].x--;
+                squaresMoved++;
+              }
+            }
+          }
+        }
+      }
+      tetromino.leftestColumn--;
+      tetromino.rightestColumn--;
+      tetromino.rotationCentre.x--;
+    }
+  }
+
+  //------------------------------------------------------------------------------------------------------------------------------------------
+
+  void moveDown() {    
+    boolean free2MoveDown = true;
+    int squaresMoved = 0;
+
+    for (int i = 0; i < 4; i++) {
+      if ((!squareIsBlack(tetromino.squares[i].x, tetromino.squares[i].y + 1)) && squareIsNotInShape(tetromino.squares[i].x, tetromino.squares[i].y + 1)) {
+        free2MoveDown = false;
+      }
+    }
+    if (free2MoveDown) {
+      while (squaresMoved < 4) { //while we haven't moved all four squares
+        for (int i = rows - 2; i >= 0; i--) { //for every row, bottom to top, except for the very bottom row, which obviously don't need to move
+          for (int j = cols - 1; j >= 0; j--) { //for every square in that row, right to left (although the order here is unimportant)
+            for (int k = 0; k < 4; k++) { //for each square in the array
+              if (int(tetromino.squares[k].x) == j && int(tetromino.squares[k].y) == i) { //if the square we're looking at matches one in the array
+                board[j][i + 1].colour = board[j][i].colour; //move it down, update its location in squares, etc.
+                board[j][i].colour = black;
+                tetromino.squares[k].y++;
+                squaresMoved++;
+              }
+            }
+          }
+        }
+      }
+      tetromino.topestRow++;
+      tetromino.bottomestRow++;
+      tetromino.rotationCentre.y++;
+    }
+  }
+
+  //------------------------------------------------------------------------------------------------------------------------------------------
+
+  void mouseUpdate() {
+    if (!allStill) {
+      if (rotationDelay == 0) {
+        if (mousePressed) {
+          if (mouseButton == RIGHT) {
+            rotateClockwise();
+          } else if (mouseButton == LEFT) {
+            rotateAClockwise();
+          }
+          rotationDelay = int(rotationDelayVar);
+        }
+      } else {
+        rotationDelay--;
+      }
+    }
+  }
+  //------------------------------------------------------------------------------------------------------------------------------------------
+
+  void rotateClockwise() {
+    if (tetromino.shape == 0) {
+      rotateLineClockwise();
+    } else if (tetromino.shape > 1) {        
+      boolean noRotate = false;
+      boolean bottomfound = false;
+      boolean topfound = false;
+      boolean leftfound = false;
+      boolean rightfound = false;
+      PVector newSquares[] = new PVector[4];
+
+      for (int i = 0; i < 4; i++) {
+        newSquares[i] = new PVector(tetromino.rotationCentre.x - (tetromino.squares[i].y - tetromino.rotationCentre.y), tetromino.rotationCentre.y + (tetromino.squares[i].x - tetromino.rotationCentre.x)); //rotation logic
+      }
+      //check that nothing is out of the board
+      for (int i = 0; i < 4; i++) {
+        if (newSquares[i].x < 0 || newSquares[i].x >= cols || newSquares[i].y < 0 || newSquares[i].y >= rows) {
+          noRotate = true;
+        }
+      }
+      //check none of the pieces are inside other blocks
+      if (!noRotate) {
+        for (int i = 0; i < 4; i++) {
+          if (!squareIsBlack(newSquares[i].x, newSquares[i].y) && squareIsNotInShape(newSquares[i].x, newSquares[i].y)) {
+            noRotate = true;
+          }
+        }
+      }
+      if (!noRotate) { //transfer over the pieces, get the new values of rotationCentre, topestRow, bottomestRow, leftestColumn, and rightestColumn
+        for (int i = 0; i < 4; i++) {
+          board[int(tetromino.squares[i].x)][int(tetromino.squares[i].y)].colour = black;
+          tetromino.squares[i].set(newSquares[i]);
+        }
+        for (int i = 0; i < 4; i++) { //this all comes afterwards in case a square rotates atop another square, in which case it would be wiped into oblivion with the black
+          board[int(tetromino.squares[i].x)][int(tetromino.squares[i].y)].colour = currentColour;
+        }
+        for (int i = 0; i < cols; i++) {
+          if (!leftfound) {
+            if (i == tetromino.squares[0].x || i == tetromino.squares[1].x || i == tetromino.squares[2].x || i == tetromino.squares[3].x) {
+              tetromino.leftestColumn = i;
+              leftfound = true;
+            }
+          }
+        }
+        for (int i = cols - 1; i >= 0; i--) {
+          if (!rightfound) {
+            if (i == tetromino.squares[0].x || i == tetromino.squares[1].x || i == tetromino.squares[2].x || i == tetromino.squares[3].x) {
+              tetromino.rightestColumn = i;
+              rightfound = true;
+            }
+          }
+        }
+        for (int j = 0; j < rows; j++) {
+          if (!topfound) {
+            if (j == tetromino.squares[0].y || j == tetromino.squares[1].y || j == tetromino.squares[2].y || j == tetromino.squares[3].y) {
+              tetromino.topestRow = j;
+              topfound = true;
+            }
+          }
+        }
+        for (int j = rows - 1; j >= 0; j--) {
+          if (!bottomfound) {
+            if (j == tetromino.squares[0].y || j == tetromino.squares[1].y || j == tetromino.squares[2].y || j == tetromino.squares[3].y) {
+              tetromino.bottomestRow = j;
+              bottomfound = true;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  //------------------------------------------------------------------------------------------------------------------------------------------
+
+  void rotateLineClockwise() {
+    PVector newSquares[] = new PVector[4];
+    boolean noRotate = false;
+    int newTopestRow = 0;
+    int newBottomestRow = 0;
+    int newRightestColumn = 0; //doing all these variables so that the code for checking only has to run once, regardless of which rotation we were doing, and then if it's allowed, we just transfer these over
+    int newLeftestColumn = 0; //they get really basic initialised values because if we're using them we'll be switching the values anyway
+    char newLineState = 'a';
+    int originalRightestColumn = tetromino.rightestColumn;
+    int originalLeftestColumn = tetromino.leftestColumn;
+    int originalBottomestRow = tetromino.bottomestRow;
+    int originalTopestRow = tetromino.topestRow;
+    char originalLineState = tetromino.lineState;
+
+    //so I didn't appreciate it for a while, but processing has got kinda buggy and a major issue here is that ++ and -- just got flat out ignored, hence the +=
+    //ontop of that, the variables were transferring over anyway, whether I liked it or not, hence the original stored values
+    if (tetromino.lineState == 'u') {
+      for (int i = 0; i < 4; i++) {
+        newSquares[i] = new PVector(tetromino.rightestColumn - 1, tetromino.topestRow - 1 + i);
+      }
+      newRightestColumn = tetromino.rightestColumn += -1;
+      newLeftestColumn = tetromino.leftestColumn += 2;
+      newTopestRow = tetromino.topestRow += -1;
+      newBottomestRow = tetromino.bottomestRow += 2;
+      newLineState = 'r';
+    } else if (tetromino.lineState == 'r') {
+
+      for (int i = 0; i < 4; i++) {
+        newSquares[i] = new PVector(tetromino.leftestColumn + 1 - i, tetromino.bottomestRow - 1);
+      }
+      newRightestColumn = tetromino.rightestColumn += 1;
+      newLeftestColumn = tetromino.leftestColumn += -2;
+      newTopestRow = tetromino.topestRow += 2;
+      newBottomestRow = tetromino.bottomestRow += -1;
+      newLineState = 'd';
+    } else if (tetromino.lineState == 'd') {
+
+      for (int i = 0; i < 4; i++) {
+        newSquares[i] = new PVector(tetromino.leftestColumn + 1, tetromino.bottomestRow + 1 - i);
+      }
+      newRightestColumn = tetromino.rightestColumn += -2;
+      newLeftestColumn = tetromino.leftestColumn += 1;
+      newTopestRow = tetromino.topestRow += -2;
+      newBottomestRow = tetromino.bottomestRow += 1;
+      newLineState = 'l';
+    } else if (tetromino.lineState == 'l') {
+
+      for (int i = 0; i < 4; i++) {
+        newSquares[i] = new PVector(tetromino.rightestColumn - 1 + i, tetromino.topestRow + 1);
+      }
+      newRightestColumn = tetromino.rightestColumn += 2;
+      newLeftestColumn = tetromino.leftestColumn += -1;
+      newTopestRow = tetromino.topestRow += 1;
+      newBottomestRow = tetromino.bottomestRow += -2;
+      newLineState = 'u';
+    } //check that nothing is out of the board
+    for (int i = 0; i < 4; i++) {
+      if (newSquares[i].x < 0 || newSquares[i].x >= cols || newSquares[i].y < 0 || newSquares[i].y >= rows) {
+        noRotate = true;
+      }
+    }
+    //check none of the pieces are inside other blocks
+    if (!noRotate) {
+      for (int i = 0; i < 4; i++) {
+        if (!squareIsBlack(newSquares[i].x, newSquares[i].y) && squareIsNotInShape(newSquares[i].x, newSquares[i].y)) {
+          noRotate = true;
+        }
+      }
+    }
+    if (!noRotate) { //transfer over the pieces, get the new values of rotationCentre, topestRow, bottomestRow, leftestColumn, and rightestColumn
+      for (int i = 0; i < 4; i++) {
+        board[int(tetromino.squares[i].x)][int(tetromino.squares[i].y)].colour = black;
+        tetromino.squares[i].set(newSquares[i]);
+      }
+      for (int i = 0; i < 4; i++) { //this all comes afterwards in case a square rotates atop another square, in which case it would be wiped into oblivion with the black
+        board[int(tetromino.squares[i].x)][int(tetromino.squares[i].y)].colour = currentColour;
+      }
+      tetromino.lineState = newLineState;
+      tetromino.leftestColumn = newLeftestColumn;
+      tetromino.rightestColumn = newRightestColumn;
+      tetromino.topestRow = newTopestRow;
+      tetromino.bottomestRow = newBottomestRow;
+    } else {
+      tetromino.lineState = originalLineState;
+      tetromino.leftestColumn = originalLeftestColumn;
+      tetromino.rightestColumn = originalRightestColumn;
+      tetromino.topestRow = originalTopestRow;
+      tetromino.bottomestRow = originalBottomestRow;
+    }
+  }
+
+  //------------------------------------------------------------------------------------------------------------------------------------------
+
+  void rotateAClockwise() {
+    if (tetromino.shape == 0) {
+      rotateLineAClockwise();
+    } else if (tetromino.shape > 1) {        
+      boolean noRotate = false;
+      boolean bottomfound = false;
+      boolean topfound = false;
+      boolean leftfound = false;
+      boolean rightfound = false;
+      PVector newSquares[] = new PVector[4];
+
+      for (int i = 0; i < 4; i++) {
+        newSquares[i] = new PVector(tetromino.rotationCentre.x + (tetromino.squares[i].y - tetromino.rotationCentre.y), tetromino.rotationCentre.y - (tetromino.squares[i].x - tetromino.rotationCentre.x));
+      }
+      //check that nothing is out of the board
+      for (int i = 0; i < 4; i++) {
+        if (newSquares[i].x < 0 || newSquares[i].x >= cols || newSquares[i].y < 0 || newSquares[i].y >= rows) {
+          noRotate = true;
+        }
+      }
+      //check none of the pieces are inside other blocks
+      if (!noRotate) {
+        for (int i = 0; i < 4; i++) {
+          if (!squareIsBlack(newSquares[i].x, newSquares[i].y) && squareIsNotInShape(newSquares[i].x, newSquares[i].y)) {
+            noRotate = true;
+          }
+        }
+      }
+      if (!noRotate) { //transfer over the pieces, get the new values of rotationCentre, topestRow, bottomestRow, leftestColumn, and rightestColumn
+        for (int i = 0; i < 4; i++) {
+          board[int(tetromino.squares[i].x)][int(tetromino.squares[i].y)].colour = black;
+          tetromino.squares[i].set(newSquares[i]);
+        }
+        for (int i = 0; i < 4; i++) { //this all comes afterwards in case a square rotates atop another square, in which case it would be wiped into oblivion with the black
+          board[int(tetromino.squares[i].x)][int(tetromino.squares[i].y)].colour = currentColour;
+        }
+        for (int i = 0; i < cols; i++) {
+          if (!leftfound) {
+            if (i == tetromino.squares[0].x || i == tetromino.squares[1].x || i == tetromino.squares[2].x || i == tetromino.squares[3].x) {
+              tetromino.leftestColumn = i;
+              leftfound = true;
+            }
+          }
+        }
+        for (int i = cols - 1; i >= 0; i--) {
+          if (!rightfound) {
+            if (i == tetromino.squares[0].x || i == tetromino.squares[1].x || i == tetromino.squares[2].x || i == tetromino.squares[3].x) {
+              tetromino.rightestColumn = i;
+              rightfound = true;
+            }
+          }
+        }
+        for (int j = 0; j < rows; j++) {
+          if (!topfound) {
+            if (j == tetromino.squares[0].y || j == tetromino.squares[1].y || j == tetromino.squares[2].y || j == tetromino.squares[3].y) {
+              tetromino.topestRow = j;
+              topfound = true;
+            }
+          }
+        }
+        for (int j = rows - 1; j >= 0; j--) {
+          if (!bottomfound) {
+            if (j == tetromino.squares[0].y || j == tetromino.squares[1].y || j == tetromino.squares[2].y || j == tetromino.squares[3].y) {
+              tetromino.bottomestRow = j;
+              bottomfound = true;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  //------------------------------------------------------------------------------------------------------------------------------------------
+
+  void rotateLineAClockwise() {
+    PVector newSquares[] = new PVector[4];
+    boolean noRotate = false;
+    int newTopestRow = 0;
+    int newBottomestRow = 0;
+    int newRightestColumn = 0; //doing all these variables so that the code for checking only has to run once, regardless of which rotation we were doing, and then if it's allowed, we just transfer these over
+    int newLeftestColumn = 0; //they get really basic initialised values because if we're using them we'll be switching the values anyway
+    char newLineState = 'a';
+    int originalRightestColumn = tetromino.rightestColumn;
+    int originalLeftestColumn = tetromino.leftestColumn;
+    int originalBottomestRow = tetromino.bottomestRow;
+    int originalTopestRow = tetromino.topestRow;
+    char originalLineState = tetromino.lineState;
+
+    //so I didn't appreciate it for a while, but processing has got kinda buggy and a major issue here is that ++ and -- just got flat out ignored, hence the +=
+    //ontop of that, the variables were transferring over anyway, whether I liked it or not, hence the original stored values
+    if (tetromino.lineState == 'u') {
+      for (int i = 0; i < 4; i++) {
+        newSquares[i] = new PVector(tetromino.leftestColumn + 1, tetromino.topestRow - 1 + i);
+      }
+      newRightestColumn = tetromino.rightestColumn += -2;
+      newLeftestColumn = tetromino.leftestColumn += 1;
+      newTopestRow = tetromino.topestRow += -1;
+      newBottomestRow = tetromino.bottomestRow += 2;
+      newLineState = 'l';
+    } else if (tetromino.lineState == 'l') {
+
+      for (int i = 0; i < 4; i++) {
+        newSquares[i] = new PVector(tetromino.leftestColumn - 1 + i, tetromino.topestRow + 2);
+      }
+      newRightestColumn = tetromino.rightestColumn += 2;
+      newLeftestColumn = tetromino.leftestColumn += -1;
+      newTopestRow = tetromino.topestRow += 2;
+      newBottomestRow = tetromino.bottomestRow += -1;
+      newLineState = 'd';
+    } else if (tetromino.lineState == 'd') {
+
+      for (int i = 0; i < 4; i++) {
+        newSquares[i] = new PVector(tetromino.leftestColumn + 2, tetromino.bottomestRow + 1 - i);
+      }
+      newRightestColumn = tetromino.rightestColumn += -1;
+      newLeftestColumn = tetromino.leftestColumn += 2;
+      newTopestRow = tetromino.topestRow += -2;
+      newBottomestRow = tetromino.bottomestRow += 1;
+      newLineState = 'r';
+    } else if (tetromino.lineState == 'r') {
+
+      for (int i = 0; i < 4; i++) {
+        newSquares[i] = new PVector(tetromino.leftestColumn + 1 - i, tetromino.bottomestRow - 2);
+      }
+      newRightestColumn = tetromino.rightestColumn += 1;
+      newLeftestColumn = tetromino.leftestColumn += -2;
+      newTopestRow = tetromino.topestRow += 1;
+      newBottomestRow = tetromino.bottomestRow += -2;
+      newLineState = 'u';
+    }   //check that nothing is out of the board
+    for (int i = 0; i < 4; i++) {
+      if (newSquares[i].x < 0 || newSquares[i].x >= cols || newSquares[i].y < 0 || newSquares[i].y >= rows) {
+        noRotate = true;
+      }
+    }
+    //check none of the pieces are inside other blocks
+    if (!noRotate) {
+      for (int i = 0; i < 4; i++) {
+        if (!squareIsBlack(newSquares[i].x, newSquares[i].y) && squareIsNotInShape(newSquares[i].x, newSquares[i].y)) {
+          noRotate = true;
+        }
+      }
+    }
+    if (!noRotate) { //transfer over the pieces, get the new values of rotationCentre, topestRow, bottomestRow, leftestColumn, and rightestColumn
+      for (int i = 0; i < 4; i++) {
+        board[int(tetromino.squares[i].x)][int(tetromino.squares[i].y)].colour = black;
+        tetromino.squares[i].set(newSquares[i]);
+      }
+      for (int i = 0; i < 4; i++) { //this all comes afterwards in case a square rotates atop another square, in which case it would be wiped into oblivion with the black
+        board[int(tetromino.squares[i].x)][int(tetromino.squares[i].y)].colour = currentColour;
+      }
+      tetromino.lineState = newLineState;
+      tetromino.leftestColumn = newLeftestColumn;
+      tetromino.rightestColumn = newRightestColumn;
+      tetromino.topestRow = newTopestRow;
+      tetromino.bottomestRow = newBottomestRow;
+    } else {
+      tetromino.lineState = originalLineState;
+      tetromino.leftestColumn = originalLeftestColumn;
+      tetromino.rightestColumn = originalRightestColumn;
+      tetromino.topestRow = originalTopestRow;
+      tetromino.bottomestRow = originalBottomestRow;
+    }
+  }
+
+  //------------------------------------------------------------------------------------------------------------------------------------------
+
+
+  void frameUpdate() {
+    if (!(tetromino.bottomestRow < rows - 1)) {
+      allStill = true;
+    } else {
+      //if it's not at the bottom
+      for (int i = 0; i < 4; i++) { //for each square, if the square below it isn't black, and isn't in the current tetromino, stop it
+        if ((!squareIsBlack(tetromino.squares[i].x, tetromino.squares[i].y + 1)) && squareIsNotInShape(tetromino.squares[i].x, tetromino.squares[i].y + 1)) {
+          allStill = true;
+        }
+      }
+    }
+    if (!allStill) {
+      moveDown();
+    } else {
+      testIfDead();
+    }
+    if (!dead && allStill) { //this comes at the start as it's triggered by the preeceding call of update, but I want the screen to draw between the tetromino getting to the bottom, 
+      removeFilledRows(); //and making the new one so that the new tetromino isn't instantaneous     
+      arrowDelay = 5*int(arrowDelayVar);
+      makeNewShape();
+    }
+  }
+
+
+  //------------------------------------------------------------------------------------------------------------------------------------------
+
+  void testIfDead() { 
+    if (tetromino.topestRow < heightLimit) {
+      dead = true;
+      frame = 0;
+    }
+  }
+
+  //------------------------------------------------------------------------------------------------------------------------------------------
+
+  void makeNewShape() { //just makes a new shape
+    tetromino = new Tetromino();
+    tetromino.makeNewShape();
+    switch(tetromino.shape) {
+    case 0: //I
+      currentColour = red;
+      break;
+    case 1: //O
+      currentColour = green;
+      break;
+    case 2: //L
+      currentColour = blue;
+      break;
+    case 3: //J
+      currentColour = pink;
+      break;
+    case 4: //T
+      currentColour = orange;
+      break;
+    case 5: //S
+      currentColour = lilac;
+      break;
+    case 6: //Z
+      currentColour = aqua;
+      break;
+    }
+    for (int i = 0; i < 4; i++) {
+      board[int(tetromino.squares[i].x)][int(tetromino.squares[i].y)].colour = currentColour;
+    }
+    allStill = false;
+    rotationDelay = 0;
+  }
+
+  //------------------------------------------------------------------------------------------------------------------------------------------
+
+  boolean rowFilled(int row) {
+    for (int i = 0; i < cols; i++) {
+      if (squareIsBlack(i, row)) {
+        return false;
+      }
+    }
+    return true; //basically, if no square in the row has returned false as it's black, then they must all be filled, right?
+  }
+
+  //------------------------------------------------------------------------------------------------------------------------------------------
+
+  boolean squareIsBlack(float column, float row) {
+    if (board[int(column)][int(row)].colour == black) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  //------------------------------------------------------------------------------------------------------------------------------------------
+
+  boolean squareIsNotInShape(float column, float row) { //they're only floats to make comparison easier, in reality they will always be integers
+    if ((column == tetromino.squares[0].x && row == tetromino.squares[0].y) || (column == tetromino.squares[1].x && row == tetromino.squares[1].y) || (column == tetromino.squares[2].x && row == tetromino.squares[2].y) || (column == tetromino.squares[3].x && row == tetromino.squares[3].y)) {
+      return false;
+    } else {
+      return true;
+    }
+  }
+
+  //------------------------------------------------------------------------------------------------------------------------------------------
+
+  void removeFilledRows() {
+    for (int j = 0; j < rows; j++) {
+      if (rowFilled(j)) { //if a row is filled
+        for (int i = 0; i < cols; i++) {
+          board[i][j].colour = black; //empty it
+          for (int k = j; k > 0; k--) { //it's a > not a >= to because otherwise you'd be trying to find board[i][-1] on the last row - and you don't need to because the top row should go black when this happens
+            board[i][k].colour = board[i][k - 1].colour; //move every colour on the screen down
+          }
+          board[i][0].colour = black; //set the top row to black
+        }
+      }
+    }
+  }
+}
