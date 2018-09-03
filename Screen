@@ -1,50 +1,50 @@
 class Screen {
   int tilesize;  
-  color red; 
-  color green;
-  color blue;
-  color lilac;
-  color pink;
-  color orange;
-  color aqua;
-  color black;
+  color black; 
   Gridsquare[][] board;
   Tetromino tetromino;
   boolean allStill;
   int arrowDelay;
   int rotationDelay;
   color currentColour;
+  boolean lastTetris;
+  int nextTetromino;
+  Button I;
+  Button J;
+  Button L;
+  Button O;
+  Button S;
+  Button T;
+  Button Z;
 
   //------------------------------------------------------------------------------------------------------------------------------------------
 
   Screen(int tilesize) {
     this.tilesize = tilesize;
     board = new Gridsquare[cols][rows];
-    red = color(255, 0, 0);
-    green = color(0, 255, 0);
-    blue = color(0, 0, 255);
-    lilac = color(128, 128, 255);
-    pink = color(255, 128, 128);
-    orange = color(255, 128, 0);
-    aqua = color(0, 198, 255);
     black = color(0);
     allStill = false;
     arrowDelay = 0;
     rotationDelay = 0;
     currentColour = black;
-  }
-
-  //------------------------------------------------------------------------------------------------------------------------------------------
-
-  void create() {
+    lastTetris = false;
+    if (testing) {
+      I = new Button(0, 400, 100, 40, 40);
+      O = new Button(1, 450, 100, 40, 40);
+      L = new Button(2, 500, 100, 40, 40);
+      J = new Button(3, 550, 100, 40, 40);
+      T = new Button(4, 600, 100, 40, 40);
+      S = new Button(5, 650, 100, 40, 40);
+      Z = new Button(6, 700, 100, 40, 40);
+    }
     for (int i = 0; i < cols; i++) {
       for (int j = 0; j < rows; j++) {
         board[i][j] = new Gridsquare(i*tilesize, j*tilesize, tilesize);
+        board[i][j].show();
       }
     }
     makeNewShape();
   }
-
 
   //------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -209,15 +209,28 @@ class Screen {
     if (!allStill) {
       if (rotationDelay == 0) {
         if (mousePressed) {
-          if (mouseButton == RIGHT) {
-            rotateClockwise();
-          } else if (mouseButton == LEFT) {
-            rotateAClockwise();
+          if (!testing || mouseX <= 400 || mouseY <= 90 || mouseX >= 800 || mouseY >= 140) {
+            if (mouseButton == RIGHT) {
+              rotateClockwise();
+            } else if (mouseButton == LEFT) {
+              rotateAClockwise();
+            }
+            rotationDelay = int(rotationDelayVar);
           }
-          rotationDelay = int(rotationDelayVar);
         }
       } else {
         rotationDelay--;
+      }
+    }
+    if (mousePressed) {
+      if (testing) {
+        screen.I.clicked();
+        screen.O.clicked();
+        screen.L.clicked();
+        screen.J.clicked();
+        screen.T.clicked();
+        screen.S.clicked();
+        screen.Z.clicked();
       }
     }
   }
@@ -578,6 +591,7 @@ class Screen {
       removeFilledRows(); //and making the new one so that the new tetromino isn't instantaneous     
       arrowDelay = 5*int(arrowDelayVar);
       makeNewShape();
+      nextTetromino = int(random(7));
     }
   }
 
@@ -594,7 +608,7 @@ class Screen {
   //------------------------------------------------------------------------------------------------------------------------------------------
 
   void makeNewShape() { //just makes a new shape
-    tetromino = new Tetromino();
+    tetromino = new Tetromino(nextTetromino);
     tetromino.makeNewShape();
     switch(tetromino.shape) {
     case 0: //I
@@ -623,7 +637,7 @@ class Screen {
       board[int(tetromino.squares[i].x)][int(tetromino.squares[i].y)].colour = currentColour;
     }
     allStill = false;
-    rotationDelay = 0;
+    rotationDelay = 1;
   }
 
   //------------------------------------------------------------------------------------------------------------------------------------------
@@ -660,6 +674,7 @@ class Screen {
   //------------------------------------------------------------------------------------------------------------------------------------------
 
   void removeFilledRows() {
+    int removedRows = 0;
     for (int j = 0; j < rows; j++) {
       if (rowFilled(j)) { //if a row is filled
         for (int i = 0; i < cols; i++) {
@@ -669,7 +684,25 @@ class Screen {
           }
           board[i][0].colour = black; //set the top row to black
         }
+        removedRows++;
       }
+    }
+    switch(removedRows) {
+    case 1:
+      score += 100;
+      break;
+    case 2:
+      score += 250;
+      break;
+    case 3:
+      score += 400;
+      break;
+    case 4:
+      score = !lastTetris? score + 800 : score + 1200;
+    }
+    lastTetris = false;
+    if (removedRows == 4) {
+      lastTetris = true;
     }
   }
 }
