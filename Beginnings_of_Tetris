@@ -2,10 +2,8 @@
 
 int tilesize = 31;
 float updateRate = 100; //this corresponds to the initial speed 
-float speedIncrease = 0.00001; //vary this by adding or taking away 9s.
-String gameOverMessage = "Game over!";
-int gameOverFlashRate = 40;
-int textSize = 32;
+float speedIncrease = 0.999999; //vary this by adding or taking away 9s.
+int flashRate = 40;
 boolean testing = true; //enable this if you're testing
 
 
@@ -38,24 +36,33 @@ boolean left = false;
 boolean right = false;
 boolean space = false;
 boolean enterPressed = false;
+int score = 0;
+boolean paused = false;
+
+color red = color(255, 0, 0);
+color green = color(0, 255, 0); 
+color  blue = color(0, 0, 255); 
+color  lilac = color(128, 128, 255); 
+color  pink = color(255, 128, 128); 
+color orange = color(255, 128, 0); 
+color  aqua = color(0, 198, 255);
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
 void setup() {
   frameRate(150);
-  size(952, 952);
-  screen = new Screen(tilesize);
-  arrowDelayVar *= 10;
-  rotationDelayVar *= 25;
+  size(1200, 800);
+  
   if (cols % 2 == 1) {
     oddCols = true;
   } else {
     oddCols = false;
   }
+  screen = new Screen(tilesize);
+  arrowDelayVar *= 10;
+  rotationDelayVar *= 25;
   dead = false;
   frame = int(updateRate);
-  screen.create();
-  screen.show();
   enter = createShape();
   enter.beginShape();
   enter.vertex(831, 611);
@@ -71,54 +78,111 @@ void setup() {
 //------------------------------------------------------------------------------------------------------------------------------------------
 
 void draw() {
-  background(127); //this is super irrelevant for most of the code, except where I want to make the death message flash so we need something that clears it
-  if (!dead) {
-    if (frame >= updateRate) {
-      screen.frameUpdate(); //moves a block down at the regular time interval
-      frame = 0;
-      updateRate -= speedIncrease;
-      //println(updateRate);
-    } else { //just ensures gravity doesn't get in the way
-      screen.mouseUpdate(); //rotates a block in accordance to pressing the mouse
-    }    
+  if (!paused) {
+    background(127); //this is super irrelevant for most of the code, except where I want to make the death message flash so we need something that clears it
+    if (!dead) {
+      if (frame >= updateRate) {
+        screen.frameUpdate(); //moves a block down at the regular time interval
+        frame = 0;
+        updateRate *= speedIncrease;
+        //println(updateRate);
+      } else { //just ensures gravity doesn't get in the way
+        screen.mouseUpdate(); //rotates a block in accordance to pressing the mouse
+      }    
 
-    screen.arrowUpdate(); //moves a block in accordance to a pressing of the arrow key - this is outside the else to prevent stop starts - less important for rotation since the rotation delay is longer
+      screen.arrowUpdate(); //moves a block in accordance to a pressing of the arrow key - this is outside the else to prevent stop starts - less important for rotation since the rotation delay is longer
 
-    screen.show(); //draws the screen
-    drawDeathline(); //draws the line of death
-    frame++;
-
-    if (testing) {
-      fill(255);
-      textSize(12);
-      for (int i = 0; i < cols; i++) { //for testing purposes
-        text(i, i*tilesize + tilesize/2, (rows + 1) * tilesize);
-      }
-      for (int i = 0; i < rows; i++) { //for testing purposes
-        text(i, (cols + 1)*tilesize, i * tilesize + tilesize/2);
-      }
-
-      drawMouseKeyboard();
+      screen.show(); //draws the screen
+      drawDeathline(); //draws the line of death
       textSize(20);
+      fill(255);
+      textAlign(CENTER, CENTER);
+      text(("Score: " + score), width - 100, 20);
+      frame++;
+
+      if (testing) {
+        fill(255);
+        textSize(12);
+        for (int i = 0; i < cols; i++) { //for testing purposes
+          text(i, i*tilesize + tilesize/2, (rows + 1) * tilesize);
+        }
+        for (int i = 0; i < rows; i++) { //for testing purposes
+          text(i, (cols + 1)*tilesize, i * tilesize + tilesize/2);
+        }
+
+        drawMouseKeyboard();
+        drawButtons();
+        switch(screen.nextTetromino) {
+        case 0: //I
+          fill(red);
+          break;
+        case 1: //O
+          fill(green);
+          break;
+        case 2: //L
+          fill(blue);
+          break;
+        case 3: //J
+          fill(pink);
+          break;
+        case 4: //T
+          fill(orange);
+          break;
+        case 5: //S
+          fill(lilac);
+          break;
+        case 6: //Z
+          fill(aqua);
+          break;
+        }
+        stroke(255);
+        rect(700, 30, 40, 40);
+        fill(255);
+        textSize(30);
+        textAlign(CENTER, CENTER);
+        text("Next shape: ", 610, 45);        
+        textSize(20);
+        textAlign(CENTER, LEFT);
+        text(("Speed: " + int(101 - updateRate) + "%"), width - 60, height - 10);
+      }
+    } else {
+      screen.show(); //draws the screen    
+      drawDeathline(); //draws the line of death
+      frameRate(60);
+      textSize(32);
+      textAlign(CENTER, CENTER);    
       fill(255, 255, 0);
-      text(("Speed: " + int(100 - updateRate) + "%"), (cols + 4)*tilesize, 1.5 * tilesize);
+      if (frame <= 3*flashRate/4) {
+        text("Game over!", 0.5*tilesize, 0.5*tilesize, (cols - 0.5)*tilesize, (heightLimit - 0.5)*tilesize);
+      }
+      frame++;
+      if (frame > flashRate) { //we could do this otherwise with modulo arithmetic, but as frame gets larger it gets harder to store in memory so this is a better idea
+        frame = 0;
+      }
     }
   } else {
-    screen.show(); //draws the screen    
-    drawDeathline(); //draws the line of death
-    frameRate(60);
-    textSize(textSize);
-    textAlign(CENTER, CENTER);    
     fill(255, 255, 0);
-    if (frame <= 3*gameOverFlashRate/4) {
-      text(gameOverMessage, 0.5*tilesize, 0.5*tilesize, (cols - 0.5)*tilesize, (heightLimit - 0.5)*tilesize);
-    }
-    frame++;
-    if (frame > gameOverFlashRate) { //we could do this otherwise with modulo arithmetic, but as frame gets larger it gets harder to store in memory so this is a better idea
-      frame = 0;
-    }
+    textSize(64);
+    textAlign(CENTER, CENTER); 
+    text("Paused", cols/2*tilesize, rows/2*tilesize);
   }
 }
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+void drawButtons() {
+  screen.I.show();
+  screen.O.show();
+  screen.L.show();
+  screen.J.show();
+  screen.T.show();
+  screen.S.show();
+  screen.Z.show();
+}
+
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
 
 void drawMouseKeyboard() {
   noStroke();
@@ -224,6 +288,9 @@ void drawMouseKeyboard() {
   text(str(keyboardRow2.charAt(2)), 492, 646, 30, 30);
 }
 
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+
 void drawDeathline() {
 
   stroke(255);
@@ -259,6 +326,8 @@ void keyPressed() {
     s = true;
   } else if (key == 'd') {
     d = true;
+  } else if (key == 'p') {
+    paused = !paused;
   }
 }
 
