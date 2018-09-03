@@ -1,0 +1,49 @@
+class Button {
+  int type;
+  int x;
+  int y;
+  int l;
+  int w;  
+
+  Button(int type, int x, int y, int w, int l) {
+    this.type = type;
+    this.x = x;
+    this.y = y;
+    this.l = l;
+    this.w = w;
+  }
+
+  void clicked() {
+    if (mouseX >= x && mouseX <= x + w && mouseY >= y && mouseY <= y + l) {
+      screen.nextTetromino = type;
+    }
+  }
+  
+  void show() {   
+    switch(type) {
+    case 0: //I
+      fill(red);
+      break;
+    case 1: //O
+      fill(green);
+      break;
+    case 2: //L
+      fill(blue);
+      break;
+    case 3: //J
+      fill(pink);
+      break;
+    case 4: //T
+      fill(orange);
+      break;
+    case 5: //S
+      fill(lilac);
+      break;
+    case 6: //Z
+      fill(aqua);
+      break;
+    }
+    stroke(255);
+    rect(x, y, w, l);
+  }
+}
