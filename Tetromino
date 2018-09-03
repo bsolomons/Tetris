@@ -1,5 +1,5 @@
 class Tetromino {
-  int shape = int(random(7));
+  int shape;
   int rightestColumn = 0;
   int leftestColumn = 0;
   int bottomestRow = 0;
@@ -10,6 +10,10 @@ class Tetromino {
   char lineState;
 
   //------------------------------------------------------------------------------------------------------------------------------------------
+  
+  Tetromino(int shape){
+    this.shape = shape;
+  }
 
   void makeNewShape() { //creating the variables, they're stored in an array of 4 locations, basically
     if (!oddCols) {
