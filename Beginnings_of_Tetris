@@ -1,10 +1,11 @@
+/*BEN: highscore isn't carrying over, due to some sort of bug. There's no programming reason why it won't work, it just fucking hates life (relatable). Anyway, work on that. */
+
 //Variables you can edit
 
 int tilesize = 31;
-float updateRate = 100; //this corresponds to the initial speed 
+float setUpdateRate = 100; //initial speed
 float speedIncrease = 0.999999; //vary this by adding or taking away 9s.
 int flashRate = 40;
-boolean testing = true; //enable this if you're testing
 
 
 //Variables you probably shouldn't edit
@@ -14,20 +15,26 @@ int heightLimit = 4;
 int cols = 10;
 float arrowDelayVar = 1; //You can theoretically range this from 1-10, but at the moment, 1 works fine.
 float rotationDelayVar = 1; //You could theoretically range this from 1-10, but at the moment, 1 works fine.
+boolean colAndRowNums = false;
+boolean gridOutlines = false;
+boolean mouseAndKeyboard = true;
+boolean coords = false;
+boolean chooseNextShape = false;
+boolean speed = false;
 
 
 //Variables you shouldn't edit
 
 Screen screen;
-int frame; //frame is just a variable that counts which frame we're on. If we're on a frame larger than updateRate, the block moves down automatically
-boolean oddCols;
-boolean dead;
+int frame = int(setUpdateRate); //frame is just a variable that counts which frame we're on. If we're on a frame larger than updateRate, the block moves down automatically
+boolean oddCols = false;
 PShape enter;
 PShape mouseLeft;
 PShape mouseRight;
 String keyboardRow1 = "QWERTYUIOP[]";
 String keyboardRow2 = "ASDFGHJKL;'#";
 String keyboardRow3 = "ZXCVBNM,./";
+boolean dead = false;
 boolean a = false;
 boolean s = false;
 boolean d = false;
@@ -36,118 +43,52 @@ boolean left = false;
 boolean right = false;
 boolean space = false;
 boolean enterPressed = false;
+boolean r = false;
+boolean leftButton = false;
+boolean rightButton = false;
 int score = 0;
+int highscore = 0;
+float updateRate = setUpdateRate;
 boolean paused = false;
-
 color red = color(255, 0, 0);
 color green = color(0, 255, 0); 
-color  blue = color(0, 0, 255); 
-color  lilac = color(128, 128, 255); 
-color  pink = color(255, 128, 128); 
+color blue = color(0, 0, 255); 
+color lilac = color(128, 128, 255); 
+color pink = color(255, 128, 128); 
 color orange = color(255, 128, 0); 
-color  aqua = color(0, 198, 255);
+color aqua = color(0, 198, 255);
+color black = color(0, 0, 0);
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
 void setup() {
-  frameRate(150);
   size(1200, 800);
-  
   if (cols % 2 == 1) {
-    oddCols = true;
-  } else {
-    oddCols = false;
-  }
-  screen = new Screen(tilesize);
-  arrowDelayVar *= 10;
+    oddCols = true; //default is false
+  } 
+  screen = new Screen();
+  arrowDelayVar *= 7.5;
   rotationDelayVar *= 25;
-  dead = false;
-  frame = int(updateRate);
-  enter = createShape();
-  enter.beginShape();
-  enter.vertex(831, 611);
-  enter.vertex(872, 611);
-  enter.vertex(872, 676);
-  enter.vertex(842, 676);
-  enter.vertex(842, 641);
-  enter.vertex(831, 641);
-  enter.endShape(CLOSE);
-  enter.setStrokeWeight(1);
+  createEnter();
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
 void draw() {
+  frameRate(100);
+  background(127); 
   if (!paused) {
-    background(127); //this is super irrelevant for most of the code, except where I want to make the death message flash so we need something that clears it
     if (!dead) {
       if (frame >= updateRate) {
         screen.frameUpdate(); //moves a block down at the regular time interval
         frame = 0;
         updateRate *= speedIncrease;
-        //println(updateRate);
       } else { //just ensures gravity doesn't get in the way
         screen.mouseUpdate(); //rotates a block in accordance to pressing the mouse
       }    
-
       screen.arrowUpdate(); //moves a block in accordance to a pressing of the arrow key - this is outside the else to prevent stop starts - less important for rotation since the rotation delay is longer
-
-      screen.show(); //draws the screen
-      drawDeathline(); //draws the line of death
-      textSize(20);
-      fill(255);
-      textAlign(CENTER, CENTER);
-      text(("Score: " + score), width - 100, 20);
       frame++;
-
-      if (testing) {
-        fill(255);
-        textSize(12);
-        for (int i = 0; i < cols; i++) { //for testing purposes
-          text(i, i*tilesize + tilesize/2, (rows + 1) * tilesize);
-        }
-        for (int i = 0; i < rows; i++) { //for testing purposes
-          text(i, (cols + 1)*tilesize, i * tilesize + tilesize/2);
-        }
-
-        drawMouseKeyboard();
-        drawButtons();
-        switch(screen.nextTetromino) {
-        case 0: //I
-          fill(red);
-          break;
-        case 1: //O
-          fill(green);
-          break;
-        case 2: //L
-          fill(blue);
-          break;
-        case 3: //J
-          fill(pink);
-          break;
-        case 4: //T
-          fill(orange);
-          break;
-        case 5: //S
-          fill(lilac);
-          break;
-        case 6: //Z
-          fill(aqua);
-          break;
-        }
-        stroke(255);
-        rect(700, 30, 40, 40);
-        fill(255);
-        textSize(30);
-        textAlign(CENTER, CENTER);
-        text("Next shape: ", 610, 45);        
-        textSize(20);
-        textAlign(CENTER, LEFT);
-        text(("Speed: " + int(101 - updateRate) + "%"), width - 60, height - 10);
-      }
     } else {
-      screen.show(); //draws the screen    
-      drawDeathline(); //draws the line of death
       frameRate(60);
       textSize(32);
       textAlign(CENTER, CENTER);    
@@ -159,133 +100,231 @@ void draw() {
       if (frame > flashRate) { //we could do this otherwise with modulo arithmetic, but as frame gets larger it gets harder to store in memory so this is a better idea
         frame = 0;
       }
+      if (r) {
+        screen.reset();
+        frame = 0;
+        dead = false;
+        updateRate = setUpdateRate;
+      }
     }
+    screen.show(); //draws the screen, comes here to ensure it's behind the paused rectangle if need be
+    drawDeathline(); //draws the line of death
   } else {
-    fill(255, 255, 0);
+    stroke(0);
+    fill(0);
+    rect(0, 0, cols*tilesize, rows*tilesize);
+    fill(255);
     textSize(64);
     textAlign(CENTER, CENTER); 
     text("Paused", cols/2*tilesize, rows/2*tilesize);
   }
+
+
+  drawCheatButtons();
+  if (colAndRowNums) {
+    fill(255);
+    textSize(12);
+    for (int i = 0; i < cols; i++) { 
+      text(i, i*tilesize + tilesize/2, (rows + 1) * tilesize);
+    }
+    for (int i = 0; i < rows; i++) { 
+      text(i, (cols + 1)*tilesize, i * tilesize + tilesize/2);
+    }
+  }
+  drawMouseKeyboard();
+  drawColourButtons();
+  if (speed) {
+    textSize(20);
+    fill(255);
+    textAlign(CENTER, LEFT);
+    text(("Speed: " + int(101 - updateRate) + "%"), width - 60, height - 10);
+  }
+  textSize(20);
+  fill(255);
+  textAlign(CENTER, CENTER);
+  text(("Score: " + score), width - 100, 20);
+  text(("Highscore: " + score), width - 122, 50);
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-void drawButtons() {
-  screen.I.show();
-  screen.O.show();
-  screen.L.show();
-  screen.J.show();
-  screen.T.show();
-  screen.S.show();
-  screen.Z.show();
+void drawColourButtons() {
+  if (chooseNextShape) {
+    screen.I.show();
+    screen.O.show();
+    screen.L.show();
+    screen.J.show();
+    screen.T.show();
+    screen.S.show();
+    screen.Z.show();
+  }
 }
-
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
+void drawCheatButtons() {
+  textSize(15);
+  fill(255);
+  textAlign(CENTER, CENTER);
+  text("Show row and column numbers:", width - 165, height/2 - 112);
+  text("Show gridlines:", width - 105, height/2 - 72);
+  text("Show mouse and keyboard:", width - 150, height/2 - 32);
+  text("Show grid co-ordinates:", width - 139, height/2 + 8);
+  text("Show speed:", width - 97, height/2 + 48);
+  text("Choose the next piece:", width - 135, height/2 + 88);
+
+  screen.BcolAndRowNums.show();
+  if (colAndRowNums) {
+    drawTick(screen.BcolAndRowNums.x, screen.BcolAndRowNums.y);
+  }
+  screen.BgridOutlines.show();
+  if (gridOutlines) {
+    drawTick(screen.BgridOutlines.x, screen.BgridOutlines.y);
+  }
+  screen.BmouseAndKeyboard.show();
+  if (mouseAndKeyboard) {
+    drawTick(screen.BmouseAndKeyboard.x, screen.BmouseAndKeyboard.y);
+  }
+  screen.Bcoords.show();
+  if (coords) {
+    drawTick(screen.Bcoords.x, screen.Bcoords.y);
+  }
+  screen.Bspeed.show();
+  if (speed) {
+    drawTick(screen.Bspeed.x, screen.Bspeed.y);
+  }
+  screen.BchooseNextShape.show();
+  if (chooseNextShape) {
+    drawTick(screen.BchooseNextShape.x, screen.BchooseNextShape.y);
+  }
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+void drawTick(int boxX, int boxY) {
+  stroke(255);
+  strokeWeight(3);
+  line(boxX - 3, boxY + 10, boxX + 6, boxY + 16);
+  line(boxX + 6, boxY + 16, boxX + 20, boxY - 6);
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------
 
 void drawMouseKeyboard() {
-  noStroke();
-  fill(0);
-  for (int i = 0; i < 12; i++) {
-    textAlign(CENTER, CENTER);
+  if (mouseAndKeyboard) {
+    noStroke();
     fill(0);
-    stroke(255);
-    strokeWeight(1);
-    rect(411 + i*35, 611, 30, 30);
-    fill(255);    
-    text(str(keyboardRow1.charAt(i)), 411 + i*35, 611, 30, 30);
-    fill(0);
-    if (i == 0 || i == 1 || i == 2) {
-      continue;
+    textSize(12);
+    for (int i = 0; i < 12; i++) {
+      textAlign(CENTER, CENTER);
+      fill(0);
+      stroke(255);
+      strokeWeight(1);
+      rect(411 + i*35, 611, 30, 30);
+      fill(255);    
+      text(str(keyboardRow1.charAt(i)), 411 + i*35, 611, 30, 30);
+      fill(0);
+      if (i == 0 || i == 1 || i == 2) {
+        continue;
+      }
+      rect(422 + i*35, 646, 30, 30);
+      fill(255);
+      text(str(keyboardRow2.charAt(i)), 422 + i*35, 646, 30, 30);
+      if (i > 9) {
+        continue;
+      }
+      fill(0);
+      rect(433 + i*35, 681, 30, 30);
+      fill(255);
+      text(str(keyboardRow3.charAt(i)), 433 + i*35, 681, 30, 30);
     }
-    rect(422 + i*35, 646, 30, 30);
-    fill(255);
-    text(str(keyboardRow2.charAt(i)), 422 + i*35, 646, 30, 30);
-    if (i > 9) {
-      continue;
+    fill(0);
+    for (int i = 0; i < 3; i++) {
+      fill(0);
+      rect(433 + 35*i, 681, 30, 30); //z, x, and c, which are out of the for loop due to the way the continues function
+      fill(255);
+      text(str(keyboardRow3.charAt(i)), 433 + i*35, 681, 30, 30);
     }
     fill(0);
-    rect(433 + i*35, 681, 30, 30);
+    rect(783, 681, 54, 30); //shift
+    rect(842, 681, 30, 30);  //up
     fill(255);
-    text(str(keyboardRow3.charAt(i)), 433 + i*35, 681, 30, 30);
+    text("SHIFT", 783, 681, 54, 30);
+    text("UP", 842, 681, 30, 30);
+
+    int fill = 0;
+
+    fill = down ? 255: 0;
+    fill(fill);
+    stroke(255-fill);
+    rect(842, 716, 30, 30); //down
+    fill(255 - fill);
+    textSize(8.5);
+    text("DOWN", 842, 716, 30, 30); 
+
+    fill = left ? 255: 0;  
+    fill(fill);    
+    stroke(255-fill);
+    rect(433 + 315 + 59, 716, 30, 30); //left
+    fill(255 - fill); 
+    textSize(11);
+    text("LEFT", 433 + 315 + 59, 716, 30, 30);
+
+    fill = right ? 255: 0;
+    fill(fill);  
+    stroke(255-fill);  
+    rect(433 + 385 + 59, 716, 30, 30); //right
+    fill(255 - fill);   
+    textSize(8.5);
+    text("RIGHT", 433 + 385 + 59, 716, 30, 30);
+
+    fill = space ? 255: 0;
+    fill(fill);  
+    stroke(255-fill);  
+    rect(433 + 2*35, 716, 170, 30); //space
+    fill(255 - fill);   
+    textSize(8.5);
+    text("SPACE", 433 + 2*35, 716, 170, 30);
+
+    fill = enterPressed ? 255: 0;
+    enter.setFill(fill);
+    enter.setStroke(255 - fill);
+    shape(enter);
+    fill(255-fill);
+    textSize(11);
+    text("ENTER", 831, 611, 41, 30); 
+
+    fill = a ? 255: 0;
+    fill(fill);
+    stroke(255-fill);
+    rect(422, 646, 30, 30);
+    fill(255-fill);
+    text(str(keyboardRow2.charAt(0)), 422, 646, 30, 30);
+
+    fill = s ? 255: 0; //if(s){ fill = 255; } else { fill = 0;}
+    fill(fill);
+    stroke(255-fill);
+    rect(457, 646, 30, 30);
+    fill(255-fill);
+    text(str(keyboardRow2.charAt(1)), 457, 646, 30, 30);
+
+    fill = d ? 255: 0;
+    fill(fill);
+    stroke(255-fill);
+    rect(492, 646, 30, 30);
+    fill(255-fill);
+    text(str(keyboardRow2.charAt(2)), 492, 646, 30, 30);
+
+    fill = leftButton ? 255: 0;
+    drawLeft(fill);
+
+    fill = rightButton ? 255: 0;
+    drawRight(fill);
+
+    drawBottom();
+    
+    ellipse(960, 631, 11, 18);
   }
-  fill(0);
-  for (int i = 0; i < 3; i++) {
-    fill(0);
-    rect(433 + 35*i, 681, 30, 30); //z, x, and c, which are out of the for loop due to the way the continues function
-    fill(255);
-    text(str(keyboardRow3.charAt(i)), 433 + i*35, 681, 30, 30);
-  }
-  fill(0);
-  rect(783, 681, 54, 30); //shift
-  rect(842, 681, 30, 30);  //up
-  fill(255);
-  text("SHIFT", 783, 681, 54, 30);
-  text("UP", 842, 681, 30, 30);
-
-  int fill = 0;
-
-  fill = down ? 255: 0;
-  fill(fill);
-  stroke(255-fill);
-  rect(842, 716, 30, 30); //down
-  fill(255 - fill);
-  textSize(8.5);
-  text("DOWN", 842, 716, 30, 30); 
-
-  fill = left ? 255: 0;  
-  fill(fill);    
-  stroke(255-fill);
-  rect(433 + 315 + 59, 716, 30, 30); //left
-  fill(255 - fill); 
-  textSize(11);
-  text("LEFT", 433 + 315 + 59, 716, 30, 30);
-
-  fill = right ? 255: 0;
-  fill(fill);  
-  stroke(255-fill);  
-  rect(433 + 385 + 59, 716, 30, 30); //right
-  fill(255 - fill);   
-  textSize(8.5);
-  text("RIGHT", 433 + 385 + 59, 716, 30, 30);
-
-  fill = space ? 255: 0;
-  fill(fill);  
-  stroke(255-fill);  
-  rect(433 + 2*35, 716, 170, 30); //space
-  fill(255 - fill);   
-  textSize(8.5);
-  text("SPACE", 433 + 2*35, 716, 170, 30);
-
-  fill = enterPressed ? 255: 0;
-  enter.setFill(fill);
-  enter.setStroke(255 - fill);
-  shape(enter);
-  fill(255-fill);
-  textSize(11);
-  text("ENTER", 831, 611, 41, 30); 
-
-  fill = a ? 255: 0;
-  fill(fill);
-  stroke(255-fill);
-  rect(422, 646, 30, 30);
-  fill(255-fill);
-  text(str(keyboardRow2.charAt(0)), 422, 646, 30, 30);
-
-  fill = s ? 255: 0; //if(s){ fill = 255; } else { fill = 0;}
-  fill(fill);
-  stroke(255-fill);
-  rect(457, 646, 30, 30);
-  fill(255-fill);
-  text(str(keyboardRow2.charAt(1)), 457, 646, 30, 30);
-
-  fill = d ? 255: 0;
-  fill(fill);
-  stroke(255-fill);
-  rect(492, 646, 30, 30);
-  fill(255-fill);
-  text(str(keyboardRow2.charAt(2)), 492, 646, 30, 30);
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
@@ -328,12 +367,14 @@ void keyPressed() {
     d = true;
   } else if (key == 'p') {
     paused = !paused;
+  } else if (key == 'r') {
+    r = true;
   }
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
 
-void keyReleased() {
+void keyReleased() { 
   if (keyCode == DOWN) {
     down = false;
   } else if (keyCode == LEFT) {
@@ -350,7 +391,124 @@ void keyReleased() {
     s = false;
   } else if (key == 'd') {
     d = false;
+  } else if (key == 'r') {
+    r = false;
   }
 }
 
 //------------------------------------------------------------------------------------------------------------------------------------------
+
+void mousePressed() { 
+
+  if (mouseButton == LEFT) {
+    leftButton = true;
+  } else if (mouseButton == RIGHT) {
+    rightButton = true;
+  }
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+
+void mouseReleased() {
+
+  if (screen.BcolAndRowNums.clicked()) {
+    colAndRowNums = !colAndRowNums;
+  }
+  if (screen.BgridOutlines.clicked()) {
+    gridOutlines = !gridOutlines;
+  }
+  if (screen.BmouseAndKeyboard.clicked()) {
+    mouseAndKeyboard = !mouseAndKeyboard;
+  }
+  if (screen.Bcoords.clicked()) {
+    coords = !coords;
+  }
+  if (screen.BchooseNextShape.clicked()) {
+    chooseNextShape = !chooseNextShape;
+  }
+  if (screen.Bspeed.clicked()) {
+    speed = !speed;
+  }
+
+  leftButton = false;
+  rightButton = false;
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+void createEnter() {
+  enter = createShape();
+  enter.beginShape();
+  enter.vertex(831, 611);
+  enter.vertex(872, 611);
+  enter.vertex(872, 676);
+  enter.vertex(842, 676);
+  enter.vertex(842, 641);
+  enter.vertex(831, 641);
+  enter.endShape(CLOSE);
+  enter.setStrokeWeight(1);
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+void drawLeft(int fill) { //this is different to the createEnter due to bugs when using shape.curveVertex
+  fill(fill);
+  strokeWeight(1);
+  stroke(255 - fill);
+  beginShape();
+  curveVertex(960, 612);
+  curveVertex(960, 612);
+  curveVertex(940, 621);
+  curveVertex(930, 651);
+  curveVertex(930, 681);
+  curveVertex(937, 701);
+  curveVertex(937, 701);
+  vertex(940, 701);
+  vertex(960, 701);
+  endShape();
+  line(960, 701, 960, 614);
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+void drawRight(int fill) {  //these mice buttons extend too low, but I'm super lazy so I just draw over the lower half with my drawBottom() function
+  fill(fill);
+  strokeWeight(1);
+  stroke(255 - fill);
+  beginShape();
+  curveVertex(960, 612);
+  curveVertex(960, 612);
+  curveVertex(980, 621);
+  curveVertex(990, 651);
+  curveVertex(990, 681);
+  curveVertex(983, 701);
+  curveVertex(983, 701);
+  vertex(980, 701);
+  vertex(960, 701);
+  endShape();
+  line(960, 701, 960, 614);
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------
+
+void drawBottom() {
+  fill(0);
+  strokeWeight(1);
+  stroke(255);
+  beginShape();
+  curveVertex(980, 651);
+  curveVertex(990, 651);
+  curveVertex(990, 681);
+  curveVertex(983, 701);
+  curveVertex(983, 701);
+  vertex(983, 701);
+  vertex(960, 701);
+  vertex(937, 701);  
+  curveVertex(937, 701);
+  curveVertex(937, 701);
+  curveVertex(930, 681);
+  curveVertex(930, 651);
+  curveVertex(940, 651);
+  endShape(CLOSE);
+}
