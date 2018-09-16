@@ -1,42 +1,32 @@
 class Screen {
-  int tilesize;  
-  color black; 
-  Gridsquare[][] board;
+  Gridsquare[][] board = new Gridsquare[cols][rows];
   Tetromino tetromino;
-  boolean allStill;
-  int arrowDelay;
-  int rotationDelay;
-  color currentColour;
-  boolean lastTetris;
-  int nextTetromino;
-  Button I;
-  Button J;
-  Button L;
-  Button O;
-  Button S;
-  Button T;
-  Button Z;
+  boolean allStill = false;
+  int arrowDelay = 0;
+  int rotationDelay = 0;
+  int mouseDelay = 0;
+  color currentColour = black;
+  boolean lastTetris = false;
+  int nextTetromino = int(random(7));
+  int secondTetromino = int(random(7));
+  int thirdTetromino = int(random(7));
+  Button I = new Button(0, 400, 100, 40, 40);
+  Button O = new Button(1, 450, 100, 40, 40);
+  Button L = new Button(2, 500, 100, 40, 40);
+  Button J = new Button(3, 550, 100, 40, 40);
+  Button T = new Button(4, 600, 100, 40, 40);
+  Button S = new Button(5, 650, 100, 40, 40);
+  Button Z = new Button(6, 700, 100, 40, 40);
+  Button BcolAndRowNums = new Button(7, width - 40, height/2 - 120, 20, 20);
+  Button BgridOutlines = new Button(7, width - 40, height/2 - 80, 20, 20);
+  Button BmouseAndKeyboard = new Button(7, width - 40, height/2 - 40, 20, 20);
+  Button Bcoords = new Button(7, width - 40, height/2, 20, 20);
+  Button Bspeed = new Button(7, width - 40, height/2 + 40, 20, 20);
+  Button BchooseNextShape = new Button(7, width - 40, height/2 + 80, 20, 20);
 
   //------------------------------------------------------------------------------------------------------------------------------------------
 
-  Screen(int tilesize) {
-    this.tilesize = tilesize;
-    board = new Gridsquare[cols][rows];
-    black = color(0);
-    allStill = false;
-    arrowDelay = 0;
-    rotationDelay = 0;
-    currentColour = black;
-    lastTetris = false;
-    if (testing) {
-      I = new Button(0, 400, 100, 40, 40);
-      O = new Button(1, 450, 100, 40, 40);
-      L = new Button(2, 500, 100, 40, 40);
-      J = new Button(3, 550, 100, 40, 40);
-      T = new Button(4, 600, 100, 40, 40);
-      S = new Button(5, 650, 100, 40, 40);
-      Z = new Button(6, 700, 100, 40, 40);
-    }
+  Screen() {
     for (int i = 0; i < cols; i++) {
       for (int j = 0; j < rows; j++) {
         board[i][j] = new Gridsquare(i*tilesize, j*tilesize, tilesize);
@@ -58,23 +48,43 @@ class Screen {
 
   //------------------------------------------------------------------------------------------------------------------------------------------
 
+  void reset() {
+    int storehighscore = highscore; //the highscore value is getting lost (for NO REASON) so I'm having to store it here whilst I reset the score
+    allStill = false;
+    score = 0;
+    highscore = storehighscore;
+    arrowDelay = 0;
+    rotationDelay = 0;
+    mouseDelay = 0;
+    lastTetris = false;
+    for (int i = 0; i < cols; i++) {
+      for (int j = 0; j < rows; j++) {
+        board[i][j].colour = black;
+        board[i][j].show();
+      }
+    }
+    makeNewShape();
+  }
+
+  //------------------------------------------------------------------------------------------------------------------------------------------
+
   void arrowUpdate() {
     if (!allStill) {
       if (arrowDelay == 0) {
         if (keyPressed) {
-          if (keyCode == RIGHT) {
+          if ((right || d) && !left && !a) {
             if (tetromino.rightestColumn != cols - 1) {
               moveRight();
             }
-          } else if (keyCode == LEFT) {
+          } else if ((left || a) && !right && !d) {
             if (tetromino.leftestColumn != 0) {
               moveLeft();
             }
-          } else if (keyCode == DOWN) {
+          } else if (down || s) {
             if (tetromino.bottomestRow != rows - 1) {
               moveDown();
             }
-          } else if (key == ' ' || enterPressed) { //I tried to use keyCode == ENTER and processing didn't like it for literally no reason so this is what I do now
+          } else if (space || enterPressed) { 
             if (tetromino.bottomestRow != rows - 1) {
               for (int i = 0; i < rows; i++) {
                 if (tetromino.bottomestRow == rows - 1) {
@@ -84,19 +94,7 @@ class Screen {
               }
               allStill = true;
             }
-          } else if (key == 'a') {
-            if (tetromino.leftestColumn != 0) {
-              moveLeft();
-            }
-          } else if (key == 'd') {
-            if (tetromino.rightestColumn != cols - 1) {
-              moveRight();
-            }
-          } else if (key == 's') { 
-            if (tetromino.bottomestRow != rows - 1) {
-              moveDown();
-            }
-          }
+          } 
           arrowDelay = int(arrowDelayVar);
         }
       } else { 
@@ -209,7 +207,7 @@ class Screen {
     if (!allStill) {
       if (rotationDelay == 0) {
         if (mousePressed) {
-          if (!testing || mouseX <= 400 || mouseY <= 90 || mouseX >= 800 || mouseY >= 140) {
+          if ((!chooseNextShape || mouseX <= 400 || mouseY <= 90 || mouseX >= 800 || mouseY >= 140) && (mouseX <= width - 45 || mouseY <= height/2 - 125|| mouseX >= width - 15 || mouseY >= height/2 + 105)) { //extra 5 for buffer room as buttons are small
             if (mouseButton == RIGHT) {
               rotateClockwise();
             } else if (mouseButton == LEFT) {
@@ -223,18 +221,13 @@ class Screen {
       }
     }
     if (mousePressed) {
-      if (testing) {
-        screen.I.clicked();
-        screen.O.clicked();
-        screen.L.clicked();
-        screen.J.clicked();
-        screen.T.clicked();
-        screen.S.clicked();
-        screen.Z.clicked();
-      }
+      if (chooseNextShape) {
+        nextTetromino = I.clicked() ? 0 : O.clicked() ? 1 : L.clicked() ? 2 : J.clicked() ? 3 : T.clicked() ? 4 : S.clicked() ? 5 : Z.clicked() ? 6 : nextTetromino;
+      } //nextTetromino is equal to whichever button was pressed. You check if 0 was true, if so, it's = to 0, if not, check if 1 is true, if so, it's = to 1, if not, check if 2 is true, etc, and if none are true, nothing changesw
     }
   }
   //------------------------------------------------------------------------------------------------------------------------------------------
+
 
   void rotateClockwise() {
     if (tetromino.shape == 0) {
@@ -250,14 +243,12 @@ class Screen {
       for (int i = 0; i < 4; i++) {
         newSquares[i] = new PVector(tetromino.rotationCentre.x - (tetromino.squares[i].y - tetromino.rotationCentre.y), tetromino.rotationCentre.y + (tetromino.squares[i].x - tetromino.rotationCentre.x)); //rotation logic
       }
-      //check that nothing is out of the board
-      for (int i = 0; i < 4; i++) {
+      for (int i = 0; i < 4; i++) { //check that nothing is out of the board
         if (newSquares[i].x < 0 || newSquares[i].x >= cols || newSquares[i].y < 0 || newSquares[i].y >= rows) {
           noRotate = true;
         }
       }
-      //check none of the pieces are inside other blocks
-      if (!noRotate) {
+      if (!noRotate) { //check none of the pieces are inside other blocks
         for (int i = 0; i < 4; i++) {
           if (!squareIsBlack(newSquares[i].x, newSquares[i].y) && squareIsNotInShape(newSquares[i].x, newSquares[i].y)) {
             noRotate = true;
@@ -591,7 +582,9 @@ class Screen {
       removeFilledRows(); //and making the new one so that the new tetromino isn't instantaneous     
       arrowDelay = 5*int(arrowDelayVar);
       makeNewShape();
-      nextTetromino = int(random(7));
+      nextTetromino = secondTetromino;
+      secondTetromino = thirdTetromino;
+      thirdTetromino = int(random(7));
     }
   }
 
@@ -699,6 +692,10 @@ class Screen {
       break;
     case 4:
       score = !lastTetris? score + 800 : score + 1200;
+    }
+    if (score > highscore) {
+      highscore = score;
+      println("Increasing highscore!");
     }
     lastTetris = false;
     if (removedRows == 4) {
