@@ -27,11 +27,11 @@ class Gridsquare {
     } else {
       black = true;
     }
-    int i = testing? 255: 0;
+    int i = gridOutlines? 255: 0;
     stroke(i);
     strokeWeight(1);
     rect(x, y, size, size);
-    if(testing){
+    if(coords){
     fill(255);
     textSize(8);
     textAlign(CENTER, CENTER);
