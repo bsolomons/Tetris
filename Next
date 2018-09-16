@@ -1,0 +1,9 @@
+class Next{
+  Gridsquare[][] nextTiles = new Gridsquare[6][10];
+  
+  
+  
+  
+  
+  
+}
