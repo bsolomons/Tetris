@@ -13,12 +13,14 @@ class Button {
     this.w = w;
   }
 
-  void clicked() {
+  boolean clicked() {
     if (mouseX >= x && mouseX <= x + w && mouseY >= y && mouseY <= y + l) {
-      screen.nextTetromino = type;
+      return true;
+    } else {
+      return false;
     }
   }
-  
+
   void show() {   
     switch(type) {
     case 0: //I
@@ -42,8 +44,12 @@ class Button {
     case 6: //Z
       fill(aqua);
       break;
+    case 7: //ordinary button
+      fill(black);
+      break;
     }
     stroke(255);
+    strokeWeight(1);
     rect(x, y, w, l);
   }
 }
